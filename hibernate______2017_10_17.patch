@@ -1,0 +1,177 @@
+Index: .idea/vcs.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- .idea/vcs.xml	(revision )
++++ .idea/vcs.xml	(revision )
+@@ -0,0 +1,6 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="VcsDirectoryMappings">
++    <mapping directory="" vcs="Git" />
++  </component>
++</project>
+\ No newline at end of file
+Index: src/com/lanou/dao/impl/BaseDaoImpl.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/com/lanou/dao/impl/BaseDaoImpl.java	(revision )
++++ src/com/lanou/dao/impl/BaseDaoImpl.java	(revision )
+@@ -0,0 +1,88 @@
++package com.lanou.dao.impl;
++
++
++import com.lanou.dao.BaseDao;
++import com.lanou.utils.HibernateUtil;
++import org.hibernate.Query;
++import org.hibernate.Session;
++import org.hibernate.Transaction;
++
++import java.io.Serializable;
++import java.util.List;
++import java.util.Map;
++
++/**
++ * Created by dllo on 17/10/17.
++ */
++public class BaseDaoImpl<T> implements BaseDao<T> {
++    @Override
++    public T save(T t) {
++        Session session = HibernateUtil.getSession();
++        Transaction transaction = session.beginTransaction();
++        session.save(t); // 保存对象
++        transaction.commit(); // 提交事务
++        HibernateUtil.closeSession(); // 关闭session
++        return t;
++    }
++
++    @Override
++    public void delete(T t) {
++        Session session = HibernateUtil.getSession();
++        Transaction transaction = session.beginTransaction();
++        session.delete(t); // 删除某个对象
++        transaction.commit();
++        HibernateUtil.closeSession();
++    }
++
++    @Override
++    public void update(T t) {
++        Session session = HibernateUtil.getSession();
++        Transaction transaction = session.beginTransaction();
++        session.update(t); // 更新某个对象
++        transaction.commit();
++        HibernateUtil.closeSession();
++    }
++
++    @Override
++    public T get(Class<T> c, Serializable id) {
++        Session session = HibernateUtil.getSession();
++        Transaction transaction = session.beginTransaction();
++        // 根据主键id查询某个对象
++        T t = session.get(c, id);
++        transaction.commit();
++        HibernateUtil.closeSession();
++        return t; // 返回查询到的t对象
++    }
++
++    @Override
++    public T find(String hql, Map<String, Object> params) {
++        // 先调用查询所有
++        List<T> tList = findAll(hql,params);
++        if (tList.size() > 0){
++            return tList.get(0); // 查询到的第一个对象
++        }
++        return null; // 返回查询到的第一个对象
++    }
++
++    @Override
++    public List<T> findAll(String hql, Map<String, Object> params) {
++        Session session = HibernateUtil.getSession();
++        Transaction transaction = session.beginTransaction();
++        // 创建hql查询语句
++        Query query = session.createQuery(hql);
++        // 判断参数列表是否为空
++        if (params != null && params.size() > 0) {
++            // 遍历参数map集合
++            for (String key : params.keySet()) {
++                // 设置条件语句中对应的参数列表
++                // 第一个参数对应列名, 第二个参数对应列值
++                query.setParameter(key, params.get(key));
++            }
++        }
++        // 得到符合查询语句的集合
++        List<T> tList = query.list();
++        transaction.commit();
++        HibernateUtil.closeSession();
++        return tList; // 返回查询结果集合
++    }
++}
+Index: src/com/lanou/dao/BaseDao.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/com/lanou/dao/BaseDao.java	(revision )
++++ src/com/lanou/dao/BaseDao.java	(revision )
+@@ -0,0 +1,58 @@
++package com.lanou.dao;
++
++import java.io.Serializable;
++import java.util.List;
++import java.util.Map;
++
++/**
++ * Created by dllo on 17/10/17.
++ */
++public interface BaseDao<T> {
++
++    /**
++     * 保存某个对象
++     *
++     * @param t 要保存的对象
++     * @return 保存之后的对象
++     */
++    T save(T t);
++
++    /**
++     * 删除某个对象
++     *
++     * @param t 要删除的对象,次对象必须是持久化状态对象
++     */
++    void delete(T t);
++
++    /**
++     * 更新某个对象
++     * @param t 要更新的对象
++     */
++    void update(T t);
++
++    /**
++     * 查询主键对应id参数的对象
++     *
++     * @param c  要查询的类
++     * @param id 主键id
++     * @return 查询出的对象
++     */
++    T get(Class<T> c, Serializable id);
++
++    /**
++     * 根据hql条件语句返回第一个符合的对象
++     *
++     * @param hql    查询语句
++     * @param params 查询语句中对应的参数列表
++     * @return 查询出的对象
++     */
++    T find(String hql, Map<String, Object> params);
++
++    /**
++     * 根据hql条件语句返回符合的结果集合
++     * @param hql 查询语句
++     * @param params 查询语句中对应的参数列表
++     * @return 查询书的结果集合
++     */
++    List<T> findAll(String hql, Map<String, Object> params);
++}
